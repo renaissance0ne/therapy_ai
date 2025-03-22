@@ -1,10 +1,11 @@
-import mongoose from 'mongoose';
+import mongoose, { Model } from 'mongoose';
+import { ISession } from "./sessionTypes";
 
-let Session;
+let Session: Model<ISession>;
 
 try {
   // Try to get the existing model to prevent OverwriteModelError
-  Session = mongoose.model('Session');
+  Session = mongoose.model('Session') as Model<ISession>;
 } catch {
   // Define the schema if the model doesn't exist
   const SessionSchema = new mongoose.Schema({
@@ -31,7 +32,7 @@ try {
     feedback: { type: String }
   });
 
-  Session = mongoose.model('Session', SessionSchema);
+  Session = mongoose.model<ISession>('Session', SessionSchema);
 }
 
 export default Session;
