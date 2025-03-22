@@ -6,12 +6,13 @@ import "../globals.css";
 import Topbar from "@/components/shared/Topbar";
 import LeftSidebar from "@/components/shared/LeftSidebar";
 import RightSidebar from "@/components/shared/RightSidebar";
+import { Toaster } from "react-hot-toast";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "therapyAI",
-  description: "Therapist for everyone!",
+  description: "Your AI companion for mental wellbeing",
 };
 
 export default function RootLayout({
@@ -33,6 +34,7 @@ export default function RootLayout({
             </section>
             <RightSidebar />
           </main>
+          <Toaster position="bottom-right" />
         </body>
       </html>
     </ClerkProvider>
