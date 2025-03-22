@@ -5,7 +5,14 @@ import connectToMongoDB from "@/lib/mongoose";
 import Session from "@/lib/models/session";
 import { ISession } from "@/lib/models/sessionTypes";
 
-export default async function SessionPage({ params }: { params: { sessionId: string } }) {
+// Use Next.js's correct params type
+interface PageProps {
+  params: { 
+    sessionId: string 
+  };
+}
+
+export default async function SessionPage({ params }: PageProps) {
   const user = await currentUser();
   
   if (!user) {
@@ -14,8 +21,7 @@ export default async function SessionPage({ params }: { params: { sessionId: str
 
   await connectToMongoDB();
   
-  // Remove the await from params - this is the key fix
-  const { sessionId } = params;
+  const { sessionId } = params; // Already a string
   
   const session = await Session.findOne({ 
     _id: sessionId,
