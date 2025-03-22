@@ -1,13 +1,23 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { currentUser } from '@clerk/nextjs/server';
 import connectToMongoDB from '@/lib/mongoose';
 import Session from '@/lib/models/session';
-import { generateTodoList } from '@/lib/gemini';
+import { generateTodoList, initTherapySession } from '@/lib/gemini';
 
-export async function POST(req, { params }) {
+type RouteParams = {
+  params: {
+    sessionId: string;
+  };
+};
+
+type EndSessionData = {
+  endSession: boolean;
+};
+
+export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     const { sessionId } = params;
-    const { endSession } = await req.json();
+    const { endSession } = await req.json() as EndSessionData;
     
     const user = await currentUser();
     if (!user) {
@@ -55,4 +65,3 @@ export async function POST(req, { params }) {
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
-
