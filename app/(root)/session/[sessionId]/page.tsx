@@ -8,24 +8,20 @@ import { ISession } from "@/lib/models/sessionTypes";
 export default async function SessionPage({ params }: { params: { sessionId: string } }) {
   const user = await currentUser();
   
-  // If not signed in, redirect to sign in
   if (!user) {
     redirect("/sign-in");
   }
 
-  // Connect to MongoDB
   await connectToMongoDB();
   
-  // Await params to fix the Next.js 14 error
-  const { sessionId } = await params;
+  // Remove the await from params - this is the key fix
+  const { sessionId } = params;
   
-  // Fetch session data
   const session = await Session.findOne({ 
     _id: sessionId,
     userId: user.id
   }) as ISession | null;
   
-  // If session not found, redirect to home
   if (!session) {
     redirect("/");
   }
