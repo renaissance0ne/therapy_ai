@@ -1,9 +1,12 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 
 // Initialize the Google Generative AI with your API key
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-export async function initTherapySession(userContext = {}) {
+// Define the ChatSession type properly
+type ChatSession = Awaited<ReturnType<GenerativeModel['startChat']>>;
+
+export async function initTherapySession(userContext: Record<string, any> = {}) {
   const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
   
   const systemPrompt = `You are therapyAI, a compassionate and insightful AI therapist. 
@@ -35,7 +38,7 @@ export async function initTherapySession(userContext = {}) {
   return chat;
 }
 
-export async function sendMessageToGemini(chat, message) {
+export async function sendMessageToGemini(chat: ChatSession, message: string) {
   try {
     const result = await chat.sendMessage(message);
     return result.response.text();
@@ -45,7 +48,7 @@ export async function sendMessageToGemini(chat, message) {
   }
 }
 
-export async function generateTodoList(chat, sessionSummary) {
+export async function generateTodoList(chat: ChatSession, sessionSummary: string) {
   try {
     const prompt = `Based on our conversation, please generate a personalized todo list with 3-5 actionable items that could help improve the user's mental wellbeing. Each item should be specific, achievable, and relevant to what we've discussed.`;
     
@@ -57,7 +60,7 @@ export async function generateTodoList(chat, sessionSummary) {
   }
 }
 
-export async function processFeedback(chat, todoListResults, moodRating) {
+export async function processFeedback(chat: ChatSession, todoListResults: string, moodRating: number) {
   try {
     const prompt = `The user has completed some items from the todo list and rated their mood as ${moodRating}/10. Based on this feedback, what insights can you provide about which activities were most beneficial and how we might adjust future recommendations?`;
     
