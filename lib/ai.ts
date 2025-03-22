@@ -1,13 +1,11 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 
+type ChatSession = ReturnType<GenerativeModel['startChat']>;
+
 // Initialize the Google Generative AI with your API key
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
-// Define the ChatSession type properly (for TypeScript)
-// If using JavaScript, you can remove this type definition
-// type ChatSession = Awaited<ReturnType<GenerativeModel['startChat']>>;
-
-export async function initTherapySession(userContext = {}) {
+export async function initTherapySession(userContext: Record<string, unknown> = {}): Promise<ChatSession> {
   try {
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
     
@@ -44,15 +42,14 @@ export async function initTherapySession(userContext = {}) {
   }
 }
 
-export async function sendMessageToGemini(chat, message) {
+export async function sendMessageToGemini(chat: ChatSession, message: string): Promise<string> {
   try {
     const result = await chat.sendMessage(message);
     return result.response.text();
   } catch (error) {
     console.error("Error sending message to Gemini:", error);
     
-    // Better error handling with more details
-    if (error.response) {
+    if (error instanceof Error && 'response' in error) {
       console.error("API Response:", error.response);
     }
     
@@ -60,7 +57,7 @@ export async function sendMessageToGemini(chat, message) {
   }
 }
 
-export async function generateTodoList(chat, messages) {
+export async function generateTodoList(chat: ChatSession, messages: unknown[]): Promise<string> {
   try {
     const prompt = `Based on our conversation, please generate a personalized todo list with 3-5 actionable items that could help improve the user's mental wellbeing. Each item should be specific, achievable, and relevant to what we've discussed.`;
     
@@ -72,7 +69,11 @@ export async function generateTodoList(chat, messages) {
   }
 }
 
-export async function processFeedback(chat, completedTasks, moodRating) {
+export async function processFeedback(
+  chat: ChatSession,
+  completedTasks: string[],
+  moodRating: number
+): Promise<string> {
   try {
     const tasksInfo = completedTasks.length > 0 
       ? `The user has completed these tasks: ${completedTasks.join(', ')}` 

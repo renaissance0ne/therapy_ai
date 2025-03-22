@@ -16,9 +16,12 @@ export default async function SessionPage({ params }: { params: { sessionId: str
   // Connect to MongoDB
   await connectToMongoDB();
   
+  // Await params to fix the Next.js 14 error
+  const { sessionId } = await params;
+  
   // Fetch session data
   const session = await Session.findOne({ 
-    _id: params.sessionId,
+    _id: sessionId,
     userId: user.id
   }) as ISession | null;
   

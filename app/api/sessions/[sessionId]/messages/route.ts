@@ -22,7 +22,8 @@ type MessageData = {
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
-    const sessionId = params.sessionId;
+    // Await params to fix the Next.js 14 error
+    const { sessionId } = await params;
     const { message } = await req.json() as MessageData;
 
     const user = await currentUser();

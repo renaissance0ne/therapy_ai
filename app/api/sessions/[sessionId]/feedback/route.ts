@@ -33,13 +33,14 @@ type RouteParams = {
 
 type FeedbackData = {
   completedTasks?: string[];
-  moodRating: number; // Removed optional flag
+  moodRating: number;
   feedback?: string;
 };
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
-    const { sessionId } = params;
+    // Await params to fix the Next.js 14 error
+    const { sessionId } = await params;
     const { completedTasks, moodRating, feedback } = await req.json() as FeedbackData;
     
     const user = await currentUser();
@@ -58,7 +59,6 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     // Update todo list completion status
     if (completedTasks && Array.isArray(completedTasks)) {
       completedTasks.forEach(taskId => {
-        // Fix: Use find instead of id() method
         const taskIndex = session.todoList.findIndex(t => t._id.toString() === taskId);
         if (taskIndex !== -1) {
           session.todoList[taskIndex].completed = true;

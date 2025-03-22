@@ -16,7 +16,8 @@ type EndSessionData = {
 
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
-    const { sessionId } = params;
+    // Await params to fix the Next.js 14 error
+    const { sessionId } = await params;
     const { endSession } = await req.json() as EndSessionData;
     
     const user = await currentUser();
