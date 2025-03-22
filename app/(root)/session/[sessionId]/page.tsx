@@ -6,7 +6,7 @@ import Session from "@/lib/models/session";
 import { ISession } from "@/lib/models/sessionTypes";
 
 export default async function SessionPage({
-  params
+  params,
 }: {
   params: { sessionId: string };
 }) {
@@ -18,7 +18,13 @@ export default async function SessionPage({
 
   await connectToMongoDB();
   
-  const { sessionId } = params;
+  // Properly handle the async params
+  const sessionId = params?.sessionId;
+  
+  // Add validation
+  if (!sessionId) {
+    redirect("/");
+  }
   
   const session = await Session.findOne({ 
     _id: sessionId,

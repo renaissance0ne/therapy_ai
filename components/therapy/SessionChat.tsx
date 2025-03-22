@@ -47,10 +47,10 @@ export default function SessionChat({ session }: SessionChatProps) {
       const userMessage: Message = {
         role: 'user',
         content: message,
-        timestamp: new Date()
+        timestamp: new Date().toISOString()
       };
       
-      setMessages([...messages, userMessage]);
+      setMessages(prev => [...prev, userMessage]);
       setMessage('');
       
       // Send message to API
@@ -62,13 +62,24 @@ export default function SessionChat({ session }: SessionChatProps) {
         body: JSON.stringify({ message: message.trim() }),
       });
 
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
       const data = await response.json();
       
-      if (data.message) {
-        setMessages(prev => [...prev, data.message]);
+      // Add AI response to the messages state
+      if (data && data.content) {
+        const aiMessage: Message = {
+          role: 'assistant',
+          content: data.content,
+          timestamp: new Date().toISOString()
+        };
+        setMessages(prev => [...prev, aiMessage]);
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      alert('Failed to send message. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -87,6 +98,10 @@ export default function SessionChat({ session }: SessionChatProps) {
         body: JSON.stringify({ endSession: true }),
       });
 
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
       const data = await response.json();
       
       if (data.todoList) {
@@ -94,6 +109,7 @@ export default function SessionChat({ session }: SessionChatProps) {
       }
     } catch (error) {
       console.error('Error ending session:', error);
+      alert('Failed to end session. Please try again.');
     } finally {
       setIsEndingSession(false);
     }

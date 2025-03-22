@@ -35,12 +35,9 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     
     console.log(`Looking for session: ${sessionId} for user: ${user.id}`);
     
-    // Find the session with more flexible error handling
     const session = await Session.findOne({ 
-      $or: [
-        { _id: sessionId, userId: user.id },
-        { _id: sessionId }  // Try without userId as fallback
-      ]
+      _id: sessionId,
+      userId: user.id
     });
     
     if (!session) {
@@ -50,7 +47,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     // Add user message to the session
     session.messages.push({
-      role: 'user' as 'user',
+      role: 'user',
       content: message,
       timestamp: new Date()
     });
@@ -63,24 +60,19 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     // Add AI response to the session
     session.messages.push({
-      role: 'assistant' as 'assistant', 
+      role: 'assistant',
       content: response,
       timestamp: new Date()
     });
     
     await session.save();
 
-    // Generate a response ID that matches the IMessage interface
-    const responseId = `msg-${Date.now()}`;
-
-    // Return a response that matches IMessage interface
-    const messageResponse: IMessage = {
-      id: responseId,
+    // Return the response in the format the frontend expects
+    return NextResponse.json({
+      id: `msg-${Date.now()}`,
       content: response,
       isUser: false
-    };
-
-    return NextResponse.json(messageResponse);
+    });
   } catch (error) {
     console.error('Error sending message:', error);
     return NextResponse.json({ 
