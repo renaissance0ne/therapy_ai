@@ -4,19 +4,16 @@ import connectToMongoDB from '@/lib/mongoose';
 import Session from '@/lib/models/session';
 import { generateTodoList, initTherapySession } from '@/lib/gemini';
 
-type RouteParams = {
-  params: {
-    sessionId: string;
-  };
-};
-
 type EndSessionData = {
   endSession: boolean;
 };
 
-export async function POST(req: NextRequest, { params }: RouteParams) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: { sessionId: string } }
+) {
   try {
-    const { sessionId } = await params;
+    const { sessionId } = params;
     const { endSession } = await req.json() as EndSessionData;
     
     const user = await currentUser();
