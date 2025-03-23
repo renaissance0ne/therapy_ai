@@ -14,7 +14,6 @@ type EndSessionData = {
   endSession: boolean;
 };
 
-// In app/api/sessions/[sessionId]/todo/route.ts
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
     const { sessionId } = await params;
@@ -56,12 +55,54 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     
     // Parse todo list from text
     const todoItems = todoListText
+      .split('<br>')
+      .join('\n')
       .split('\n')
       .filter(line => line.trim().match(/^\d+\./))
       .map(line => {
         const task = line.replace(/^\d+\./, '').trim();
         return { task, completed: false, createdAt: new Date() };
       });
+    
+    // If no items were extracted via regex, try an alternative approach
+    if (todoItems.length === 0) {
+      const alternativeItems = todoListText
+        .replace(/<[^>]*>/g, '')  // Remove HTML tags
+        .split('\n')
+        .filter(line => line.trim().length > 10)  // Filter lines with some content
+        .slice(0, 5)  // Take up to 5 items
+        .map(line => ({
+          task: line.trim(),
+          completed: false,
+          createdAt: new Date()
+        }));
+        
+      if (alternativeItems.length > 0) {
+        // Update session with todo list and mark as completed
+        session.todoList = alternativeItems;
+        session.endTime = new Date();
+        session.completed = true;
+        
+        await session.save();
+        
+        return NextResponse.json({ todoList: alternativeItems });
+      }
+      
+      // If still no items, create a default set
+      const defaultItems = [
+        { task: "Take a 15-minute walk outside", completed: false, createdAt: new Date() },
+        { task: "Practice deep breathing for 5 minutes", completed: false, createdAt: new Date() },
+        { task: "Write down three things you're grateful for", completed: false, createdAt: new Date() }
+      ];
+      
+      session.todoList = defaultItems;
+      session.endTime = new Date();
+      session.completed = true;
+      
+      await session.save();
+      
+      return NextResponse.json({ todoList: defaultItems });
+    }
     
     // Update session with todo list and mark as completed
     session.todoList = todoItems;
