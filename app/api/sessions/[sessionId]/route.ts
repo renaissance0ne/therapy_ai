@@ -3,21 +3,19 @@ import { currentUser } from '@clerk/nextjs/server';
 import connectToMongoDB from '@/lib/mongoose';
 import Session from '@/lib/models/session';
 
-type RouteParams = {
-  params: {
-    sessionId: string;
-  };
-};
-
-export async function GET(req: NextRequest, { params }: RouteParams) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ sessionId: string }> }
+) {
   try {
-    const { sessionId } = await params;
+    const resolvedParams = await params;
+    const sessionId = resolvedParams.sessionId;
     
     const user = await currentUser();
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
+    
     await connectToMongoDB();
     
     const session = await Session.findOne({ 
