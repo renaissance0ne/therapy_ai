@@ -5,24 +5,15 @@ import connectToMongoDB from "@/lib/mongoose";
 import Session from "@/lib/models/session";
 import { ISession } from "@/lib/models/sessionTypes";
 
-import type { PageProps } from "next"
-
-declare module "next" {
-  interface PageProps {
-    params: {
-      sessionId: string
-    }
-  }
-}
-
 interface SessionPageProps {
-  params: {
+  params: Promise<{
     sessionId: string;
-  };
+  }>;
 }
 
 export default async function SessionPage({ params }: SessionPageProps) {
   const user = await currentUser();
+  const resolvedParams = await params;
 
   if (!user) {
     redirect("/sign-in");
@@ -30,8 +21,7 @@ export default async function SessionPage({ params }: SessionPageProps) {
 
   await connectToMongoDB();
 
-  // Properly handle the async params
-  const sessionId = params?.sessionId;
+  const sessionId = resolvedParams?.sessionId;
 
   // Add validation
   if (!sessionId) {
