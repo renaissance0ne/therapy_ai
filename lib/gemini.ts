@@ -1,5 +1,7 @@
+// In your Gemini API wrapper file
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
 import Session from './models/session';
+import DOMPurify from 'dompurify';
 
 // Initialize the Google Generative AI with your API key
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -59,7 +61,8 @@ export async function initTherapySession(userId: string) {
 export async function sendMessageToGemini(chat: ChatSession, message: string) {
   try {
     const result = await chat.sendMessage(message);
-    return result.response.text();
+    const responseText = result.response.text();
+    return formatGeminiResponse(responseText);
   } catch (error: any) {
     console.error("Error sending message to Gemini:", error);
     
@@ -72,6 +75,33 @@ export async function sendMessageToGemini(chat: ChatSession, message: string) {
   }
 }
 
+function formatGeminiResponse(content: string) {
+  // Format bold text
+  let processed = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  // Format italic text
+  processed = processed.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  
+  // Format headings
+  processed = processed.replace(/^### (.*?)$/gm, '<h3 class="text-xl font-bold my-2">$1</h3>');
+  processed = processed.replace(/^## (.*?)$/gm, '<h2 class="text-2xl font-bold my-2">$1</h2>');
+  processed = processed.replace(/^# (.*?)$/gm, '<h1 class="text-3xl font-bold my-3">$1</h1>');
+  
+  // Format lists
+  processed = processed.replace(/^\- (.*?)$/gm, '<li class="ml-4">$1</li>');
+  processed = processed.replace(/^\d+\. (.*?)$/gm, '<li class="ml-4 list-decimal">$1</li>');
+  
+  // Format links
+  processed = processed.replace(/\[([^\]]+)\]\(([^)]+)\)/g, 
+    '<a href="$2" class="text-blue-400 underline" target="_blank">$1</a>');
+  
+  // Convert newlines to <br> tags
+  processed = processed.replace(/\n\n/g, '<br><br>');
+  processed = processed.replace(/\n/g, '<br>');
+  
+  return processed;
+}
+
 export async function generateTodoList(chat: ChatSession, messages: any[], previousTodos: string[] = []) {
   try {
     let prompt = `Based on our conversation, please generate a personalized todo list with 3-5 actionable items that could help improve the user's mental wellbeing. Each item should be specific, achievable, and relevant to what we've discussed.`;
@@ -81,7 +111,7 @@ export async function generateTodoList(chat: ChatSession, messages: any[], previ
     }
     
     const result = await chat.sendMessage(prompt);
-    return result.response.text();
+    return formatGeminiResponse(result.response.text());
   } catch (error) {
     console.error("Error generating todo list:", error);
     return "I couldn't generate a todo list. Please try again later.";
@@ -97,7 +127,7 @@ export async function processFeedback(chat: ChatSession, completedTasks: string[
     const prompt = `${tasksInfo} and rated their mood as ${moodRating}/10. Based on this feedback, what insights can you provide about which activities were most beneficial and how we might adjust future recommendations?`;
     
     const result = await chat.sendMessage(prompt);
-    return result.response.text();
+    return formatGeminiResponse(result.response.text());
   } catch (error: any) {
     console.error("Error processing feedback:", error);
     return "I couldn't process your feedback. Let's discuss directly what worked well for you.";

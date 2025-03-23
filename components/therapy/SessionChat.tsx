@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import DOMPurify from 'dompurify';
 
 // Define types for our component
 interface Message {
@@ -115,6 +116,14 @@ export default function SessionChat({ session }: SessionChatProps) {
     }
   };
 
+  // Use client-side only for DOMPurify
+  const sanitizeHtml = (html: string) => {
+    if (typeof window !== 'undefined') {
+      return DOMPurify.sanitize(html);
+    }
+    return html;
+  };
+
   return (
     <div className="flex flex-col h-[70vh]">
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-dark-3 rounded-t-lg">
@@ -130,7 +139,11 @@ export default function SessionChat({ session }: SessionChatProps) {
                   : 'bg-dark-4 text-light-2'
               }`}
             >
-              <p>{msg.content}</p>
+              {msg.role === 'assistant' ? (
+                <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(msg.content) }} />
+              ) : (
+                <p>{msg.content}</p>
+              )}
               <p className="text-xs mt-1 opacity-70">
                 {new Date(msg.timestamp).toLocaleTimeString()}
               </p>

@@ -22,6 +22,7 @@ interface TodoListProps {
 export default function TodoList({ session }: TodoListProps) {
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [moodRating, setMoodRating] = useState(5);
+  const [mentalState, setMentalState] = useState('');
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
@@ -49,6 +50,7 @@ export default function TodoList({ session }: TodoListProps) {
         body: JSON.stringify({
           completedTasks,
           moodRating,
+          mentalState,
           feedback
         }),
       });
@@ -73,6 +75,20 @@ export default function TodoList({ session }: TodoListProps) {
     }
   };
 
+  const getMoodEmoji = (rating: number) => {
+    if (rating <= 3) return "😔";
+    if (rating <= 5) return "😐";
+    if (rating <= 7) return "🙂";
+    return "😁";
+  };
+
+  const mentalStatePrompts = [
+    "Did completing these tasks make you feel accomplished, or stressed?",
+    "Do you feel more organized now, or still overwhelmed?",
+    "How did these tasks impact your energy levels?",
+    "Did finishing these tasks change your outlook on the day?"
+  ];
+
   return (
     <div className="w-full max-w-md mx-auto p-6 bg-dark-2 rounded-xl">
       <h2 className="text-xl font-semibold text-light-1 mb-4">Your Todo List</h2>
@@ -96,23 +112,40 @@ export default function TodoList({ session }: TodoListProps) {
       </div>
       
       <div className="mb-6">
-        <label className="block text-light-1 mb-2">How do you feel after completing these tasks? (1-10)</label>
-        <input
-          type="range"
-          min="1"
-          max="10"
-          value={moodRating}
-          onChange={(e) => setMoodRating(parseInt(e.target.value))}
-          className="w-full h-2 bg-dark-4 rounded-lg appearance-none cursor-pointer"
-        />
+        <label className="block text-light-1 mb-2">How do you feel after completing these tasks?</label>
+        <div className="flex items-center">
+          <input
+            type="range"
+            min="1"
+            max="10"
+            value={moodRating}
+            onChange={(e) => setMoodRating(parseInt(e.target.value))}
+            className="w-full h-2 bg-dark-4 rounded-lg appearance-none cursor-pointer"
+          />
+          <span className="ml-3 text-2xl">{getMoodEmoji(moodRating)}</span>
+        </div>
         <div className="flex justify-between text-light-2 text-sm mt-1">
-          <span>1</span>
-          <span>5</span>
-          <span>10</span>
+          <span>Not great</span>
+          <span>Neutral</span>
+          <span>Excellent</span>
         </div>
-        <div className="text-center text-light-1 mt-2">
-          Current rating: {moodRating}
+      </div>
+      
+      <div className="mb-6">
+        <label htmlFor="mentalState" className="block text-light-1 mb-2">
+          Describe how you're feeling now
+        </label>
+        <div className="text-light-2 text-sm mb-2 italic">
+          {mentalStatePrompts[Math.floor(Math.random() * mentalStatePrompts.length)]}
         </div>
+        <textarea
+          id="mentalState"
+          value={mentalState}
+          onChange={(e) => setMentalState(e.target.value)}
+          rows={3}
+          className="w-full p-3 bg-dark-3 border border-dark-4 rounded-lg text-light-1 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          placeholder="Describe your mental state after completing these tasks..."
+        />
       </div>
       
       <div className="mb-6">
@@ -123,9 +156,9 @@ export default function TodoList({ session }: TodoListProps) {
           id="feedback"
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}
-          rows={4}
+          rows={3}
           className="w-full p-3 bg-dark-3 border border-dark-4 rounded-lg text-light-1 focus:outline-none focus:ring-1 focus:ring-primary-500"
-          placeholder="Share your thoughts on the tasks and how they affected you..."
+          placeholder="Share your thoughts on the tasks themselves..."
         />
       </div>
       
