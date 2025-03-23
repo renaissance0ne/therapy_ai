@@ -6,13 +6,14 @@ import Session from "@/lib/models/session";
 import { ISession } from "@/lib/models/sessionTypes";
 
 interface TodoPageProps {
-  params: {
+  params: Promise<{
     sessionId: string;
-  };
+  }>;
 }
 
 export default async function TodoPage({ params }: TodoPageProps) {
   const user = await currentUser();
+  const resolvedParams = await params;
 
   if (!user) {
     redirect("/sign-in");
@@ -20,7 +21,7 @@ export default async function TodoPage({ params }: TodoPageProps) {
 
   await connectToMongoDB();
 
-  const sessionId = params?.sessionId;
+  const sessionId = resolvedParams?.sessionId;
 
   if (!sessionId) {
     redirect("/");
