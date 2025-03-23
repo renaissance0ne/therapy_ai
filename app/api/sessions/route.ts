@@ -46,16 +46,21 @@ export async function POST() {
 
     await connectToMongoDB();
     
+    // Initialize a new chat session with Gemini, passing the userId
     // Initialize a new chat session with Gemini
-    const chat = await initTherapySession();
+    const chat = await initTherapySession(user.id);
+        
+    // getHistory() returns a Promise, so await it
+    const history = await chat.getHistory();
+    const initialMessage = history[1].parts[0].text;
     
-    // Create a new session in the database
+    // Rest of your code...
     const session = await Session.create({
       userId: user.id,
       messages: [
         {
           role: 'assistant',
-          content: "Hello! I'm therapyAI, and I'm here to provide a supportive space for you to talk about what's on your mind. How are you feeling today, and what brings you to this session?",
+          content: initialMessage,
           timestamp: new Date()
         }
       ]

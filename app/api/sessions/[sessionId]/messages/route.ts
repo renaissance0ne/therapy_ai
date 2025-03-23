@@ -53,7 +53,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     });
 
     // Initialize chat with history
-    const chat = await initTherapySession();
+    const chat = await initTherapySession(user.id);
 
     // Send the message to Gemini
     const response = await sendMessageToGemini(chat, message);

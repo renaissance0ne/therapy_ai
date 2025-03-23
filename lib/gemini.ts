@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI, GenerativeModel } from '@google/generative-ai';
+import Session from './models/session';
 
 // Initialize the Google Generative AI with your API key
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
@@ -6,16 +7,28 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 // Define the ChatSession type properly
 type ChatSession = Awaited<ReturnType<GenerativeModel['startChat']>>;
 
-export async function initTherapySession(userContext: Record<string, any> = {}) {
+export async function initTherapySession(userId: string) {
   try {
+    // Check for previous sessions with incomplete todos
+    const previousSessions = await Session.find({
+      userId,
+      completed: true,
+      'todoList.completed': false
+    }).sort({ endTime: -1 }).limit(1);
+    
+    const hasPreviousTodos = previousSessions.length > 0;
+    
     const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-lite' });
     
-    const systemPrompt = `You are therapyAI, a compassionate and insightful AI therapist. 
-    Your goal is to create a safe space for the user to express their thoughts and feelings.
-    Ask open-ended questions, practice active listening, and show empathy.
-    Avoid giving medical diagnoses or prescribing medication.
-    Focus on understanding the user's situation, providing support, and suggesting healthy coping strategies.
-    At the end of the session, you'll create a personalized todo list with 3-5 actionable items that could help improve their mental wellbeing.`;
+    let initialMessage = "Hello! I'm therapyAI, and I'm here to provide a supportive space for you to talk about what's on your mind. How are you feeling today, and what brings you to this session?";
+    
+    if (hasPreviousTodos) {
+      const previousTodos = previousSessions[0].todoList
+        .filter((todo: { completed: any; }) => !todo.completed)
+        .map((todo: { task: any; }) => todo.task);
+      
+      initialMessage = `Welcome back! In our last session, I suggested these tasks: ${previousTodos.join(', ')}. Have you had a chance to complete any of them? How did they impact your mental state?`;
+    }
     
     const chat = model.startChat({
       history: [
@@ -25,7 +38,7 @@ export async function initTherapySession(userContext: Record<string, any> = {}) 
         },
         {
           role: 'model',
-          parts: [{ text: "Hello! I'm therapyAI, and I'm here to provide a supportive space for you to talk about what's on your mind. How are you feeling today, and what brings you to this session?" }],
+          parts: [{ text: initialMessage }],
         },
       ],
       generationConfig: {
@@ -37,7 +50,7 @@ export async function initTherapySession(userContext: Record<string, any> = {}) 
     });
 
     return chat;
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error initializing Gemini session:", error);
     throw new Error("Failed to initialize AI session. Please check your API configuration.");
   }
@@ -59,13 +72,17 @@ export async function sendMessageToGemini(chat: ChatSession, message: string) {
   }
 }
 
-export async function generateTodoList(chat: ChatSession, messages: any[]) {
+export async function generateTodoList(chat: ChatSession, messages: any[], previousTodos: string[] = []) {
   try {
-    const prompt = `Based on our conversation, please generate a personalized todo list with 3-5 actionable items that could help improve the user's mental wellbeing. Each item should be specific, achievable, and relevant to what we've discussed.`;
+    let prompt = `Based on our conversation, please generate a personalized todo list with 3-5 actionable items that could help improve the user's mental wellbeing. Each item should be specific, achievable, and relevant to what we've discussed.`;
+    
+    if (previousTodos.length > 0) {
+      prompt += ` Consider these previous incomplete todo items that may still be relevant: ${previousTodos.join(', ')}. You can include them if still applicable or create entirely new tasks based on today's session.`;
+    }
     
     const result = await chat.sendMessage(prompt);
     return result.response.text();
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error generating todo list:", error);
     return "I couldn't generate a todo list. Please try again later.";
   }

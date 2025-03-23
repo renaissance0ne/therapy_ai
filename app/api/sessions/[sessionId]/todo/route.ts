@@ -14,9 +14,9 @@ type EndSessionData = {
   endSession: boolean;
 };
 
+// In app/api/sessions/[sessionId]/todo/route.ts
 export async function POST(req: NextRequest, { params }: RouteParams) {
   try {
-    // Await params to fix the Next.js 14 error
     const { sessionId } = await params;
     const { endSession } = await req.json() as EndSessionData;
     
@@ -37,14 +37,24 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: 'Missing endSession parameter' }, { status: 400 });
     }
     
+    // Get previous incomplete todos
+    const previousSession = await Session.findOne({
+      userId: user.id,
+      completed: true,
+      _id: { $ne: sessionId }
+    }).sort({ endTime: -1 });
+    
+    const previousTodos = previousSession?.todoList
+      .filter(todo => !todo.completed)
+      .map(todo => todo.task) || [];
+    
     // Initialize chat with history
-    const chat = await initTherapySession();
+    const chat = await initTherapySession(user.id);
     
     // Generate todo list
-    const todoListText = await generateTodoList(chat, session.messages);
+    const todoListText = await generateTodoList(chat, session.messages, previousTodos);
     
     // Parse todo list from text
-    // This is a simple parser - in production you'd want something more robust
     const todoItems = todoListText
       .split('\n')
       .filter(line => line.trim().match(/^\d+\./))
