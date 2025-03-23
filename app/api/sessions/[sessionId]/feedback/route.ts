@@ -25,22 +25,21 @@ interface ISession {
   save: () => Promise<void>;
 }
 
-type RouteParams = {
-  params: {
-    sessionId: string;
-  };
-};
-
 type FeedbackData = {
   completedTasks?: string[];
   moodRating: number;
   feedback?: string;
 };
 
-export async function POST(req: NextRequest, { params }: RouteParams) {
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ sessionId: string }> }
+) {
   try {
-    // Await params to fix the Next.js 14 error
-    const { sessionId } = await params;
+    // Await params to fix the Next.js 14/15 error
+    const resolvedParams = await params;
+    const sessionId = resolvedParams.sessionId;
+    
     const { completedTasks, moodRating, feedback } = await req.json() as FeedbackData;
     
     const user = await currentUser();
