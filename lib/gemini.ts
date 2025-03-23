@@ -104,17 +104,40 @@ function formatGeminiResponse(content: string) {
 
 export async function generateTodoList(chat: ChatSession, messages: any[], previousTodos: string[] = []) {
   try {
-    let prompt = `Based on our conversation, please generate a personalized todo list with 3-5 actionable items that could help improve the user's mental wellbeing. Each item should be specific, achievable, and relevant to what we've discussed.`;
+    // Create a simplified summary of the conversation for context
+    const conversationSummary = messages
+      .filter(msg => msg.role === 'user')
+      .slice(-5)  // Take last 5 user messages for context
+      .map(msg => msg.content)
+      .join(' ');
     
-    if (previousTodos.length > 0) {
-      prompt += ` Consider these previous incomplete todo items that may still be relevant: ${previousTodos.join(', ')}. You can include them if still applicable or create entirely new tasks based on today's session.`;
-    }
+    let prompt = `Create a TODO LIST with exactly 3-5 specific, actionable tasks based on this conversation summary: "${conversationSummary}"
+
+IMPORTANT:
+- START IMMEDIATELY with "1." for the first task
+- ONLY provide numbered tasks (1., 2., 3., etc.)
+- DO NOT include any introduction, questions, or explanations
+- Each task must be practical and relate to mental wellbeing
+
+Previous incomplete tasks: ${previousTodos.join(', ')}`;
+    
+    console.log("Sending todo generation prompt:", prompt); // For debugging
     
     const result = await chat.sendMessage(prompt);
-    return formatGeminiResponse(result.response.text());
+    const response = result.response.text();
+    
+    console.log("Raw todo response:", response); // For debugging
+    
+    // If response doesn't contain any numbered items, return default items
+    if (!response.match(/\d+\./)) {
+      console.log("No numbered items found in response, using defaults");
+      return "1. Take a 15-minute walk outside\n2. Practice deep breathing for 5 minutes\n3. Write down three things you're grateful for";
+    }
+    
+    return formatGeminiResponse(response);
   } catch (error) {
     console.error("Error generating todo list:", error);
-    return "I couldn't generate a todo list. Please try again later.";
+    return "1. Take a 15-minute walk outside\n2. Practice deep breathing for 5 minutes\n3. Write down three things you're grateful for";
   }
 }
 
@@ -133,3 +156,4 @@ export async function processFeedback(chat: ChatSession, completedTasks: string[
     return "I couldn't process your feedback. Let's discuss directly what worked well for you.";
   }
 }
+

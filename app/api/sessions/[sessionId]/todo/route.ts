@@ -52,56 +52,53 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     
     // Generate todo list
     const todoListText = await generateTodoList(chat, session.messages, previousTodos);
+
+    // Improved parsing of todo items
+    // First remove HTML tags
+    const cleanText = todoListText.replace(/<[^>]*>/g, '');
     
-    // Parse todo list from text
-    const todoItems = todoListText
-      .split('<br>')
-      .join('\n')
-      .split('\n')
-      .filter(line => line.trim().match(/^\d+\./))
-      .map(line => {
-        const task = line.replace(/^\d+\./, '').trim();
+    // Try to find numbered items first (1. Task description)
+    let todoItems: string | any[] = [];
+    const numberedItems = cleanText.match(/\d+\.\s+([^\n]+)/g);
+    
+    if (numberedItems && numberedItems.length > 0) {
+      todoItems = numberedItems.map(item => {
+        const task = item.replace(/^\d+\.\s+/, '').trim();
         return { task, completed: false, createdAt: new Date() };
       });
-    
-    // If no items were extracted via regex, try an alternative approach
-    if (todoItems.length === 0) {
-      const alternativeItems = todoListText
-        .replace(/<[^>]*>/g, '')  // Remove HTML tags
-        .split('\n')
-        .filter(line => line.trim().length > 10)  // Filter lines with some content
-        .slice(0, 5)  // Take up to 5 items
-        .map(line => ({
-          task: line.trim(),
-          completed: false,
-          createdAt: new Date()
-        }));
-        
-      if (alternativeItems.length > 0) {
-        // Update session with todo list and mark as completed
-        session.todoList = alternativeItems;
-        session.endTime = new Date();
-        session.completed = true;
-        
-        await session.save();
-        
-        return NextResponse.json({ todoList: alternativeItems });
+    } else {
+      // Try looking for bullet points
+      const bulletItems = cleanText.match(/[•\-\*]\s+([^\n]+)/g);
+      if (bulletItems && bulletItems.length > 0) {
+        todoItems = bulletItems.map(item => {
+          const task = item.replace(/^[•\-\*]\s+/, '').trim();
+          return { task, completed: false, createdAt: new Date() };
+        });
+      } else {
+        // Split by lines and filter for likely task-like content
+        const lines = cleanText.split('\n')
+          .map(line => line.trim())
+          .filter(line => line.length > 10 && line.length < 200)  // Reasonable task length
+          .filter(line => !line.toLowerCase().includes('todo') && !line.toLowerCase().includes('here')) // Filter headers
+          .filter(line => !line.toLowerCase().startsWith('based on') && !line.toLowerCase().startsWith('i recommend')); // Filter intro text
+          
+        if (lines.length >= 2) {
+          todoItems = lines.slice(0, 5).map(line => ({
+            task: line,
+            completed: false, 
+            createdAt: new Date()
+          }));
+        }
       }
-      
-      // If still no items, create a default set
-      const defaultItems = [
+    }
+    
+    // If no items were extracted, use default tasks
+    if (todoItems.length === 0) {
+      todoItems = [
         { task: "Take a 15-minute walk outside", completed: false, createdAt: new Date() },
         { task: "Practice deep breathing for 5 minutes", completed: false, createdAt: new Date() },
         { task: "Write down three things you're grateful for", completed: false, createdAt: new Date() }
       ];
-      
-      session.todoList = defaultItems;
-      session.endTime = new Date();
-      session.completed = true;
-      
-      await session.save();
-      
-      return NextResponse.json({ todoList: defaultItems });
     }
     
     // Update session with todo list and mark as completed
