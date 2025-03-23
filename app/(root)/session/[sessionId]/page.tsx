@@ -5,32 +5,34 @@ import connectToMongoDB from "@/lib/mongoose";
 import Session from "@/lib/models/session";
 import { ISession } from "@/lib/models/sessionTypes";
 
-export default async function SessionPage({
-  params,
-}: {
-  params: { sessionId: string };
-}) {
+interface SessionPageProps {
+  params: {
+    sessionId: string;
+  };
+}
+
+export default async function SessionPage({ params }: SessionPageProps) {
   const user = await currentUser();
-  
+
   if (!user) {
     redirect("/sign-in");
   }
 
   await connectToMongoDB();
-  
+
   // Properly handle the async params
   const sessionId = params?.sessionId;
-  
+
   // Add validation
   if (!sessionId) {
     redirect("/");
   }
-  
-  const session = await Session.findOne({ 
+
+  const session = await Session.findOne({
     _id: sessionId,
-    userId: user.id
-  }) as ISession | null;
-  
+    userId: user.id,
+  }).exec() as ISession | null;
+
   if (!session) {
     redirect("/");
   }
@@ -42,7 +44,7 @@ export default async function SessionPage({
         <p className="text-light-2 mb-6">
           Chat with therapyAI about what's on your mind. When you're ready, click "End Session" to get your personalized todo list.
         </p>
-        
+
         <SessionChat session={JSON.parse(JSON.stringify(session))} />
       </div>
     </div>
