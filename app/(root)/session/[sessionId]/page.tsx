@@ -5,6 +5,16 @@ import connectToMongoDB from "@/lib/mongoose";
 import Session from "@/lib/models/session";
 import { ISession } from "@/lib/models/sessionTypes";
 
+import type { PageProps } from "next"
+
+declare module "next" {
+  interface PageProps {
+    params: {
+      sessionId: string
+    }
+  }
+}
+
 interface SessionPageProps {
   params: {
     sessionId: string;
