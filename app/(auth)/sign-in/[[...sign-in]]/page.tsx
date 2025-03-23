@@ -31,7 +31,7 @@ export default function SignInPage(): ReactElement {
                 className="py-10 px-8 space-y-6"
               >
                 <div className="space-y-2 text-center">
-                  <h2 className="text-xl font-semibold text-white">Sign in to Ambrosia</h2>
+                  <h2 className="text-xl font-semibold text-white">Sign in to therapyAi</h2>
                   <p className="text-sm text-gray-400">Welcome back! Please sign in to continue</p>
                 </div>
                 
